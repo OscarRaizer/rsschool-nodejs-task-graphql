@@ -104,6 +104,28 @@ export const createSchema = (prisma: PrismaClient) => {
           },
           resolve: async () => prisma.post.findMany(),
         },
+        profiles: {
+          type: new GraphQLList(ProfileType),
+          resolve: async () => prisma.profile.findMany(),
+        },
+        profile: {
+          type: ProfileType,
+          args: {
+            id: { type: new GraphQLNonNull(UUIDType) },
+          },
+          resolve: async (_, { id }) => prisma.profile.findUnique({ where: { id } }),
+        },
+        memberTypes: {
+          type: new GraphQLList(MemberType),
+          resolve: async () => prisma.memberType.findMany(),
+        },
+        memberType: {
+          type: MemberType,
+          args: {
+            id: { type: new GraphQLNonNull(UUIDType) },
+          },
+          resolve: async (_, { id }) => prisma.memberType.findUnique({ where: { id } }),
+        },
       },
     }),
   });
