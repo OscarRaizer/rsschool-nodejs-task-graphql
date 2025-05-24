@@ -93,6 +93,17 @@ export const createSchema = (prisma: PrismaClient) => {
           },
           resolve: async (_, { id }) => prisma.user.findUnique({ where: { id } }),
         },
+        posts: {
+          type: new GraphQLList(PostType),
+          resolve: async () => prisma.post.findMany(),
+        },
+        post: {
+          type: PostType,
+          args: {
+            id: { type: new GraphQLNonNull(UUIDType) },
+          },
+          resolve: async () => prisma.post.findMany(),
+        },
       },
     }),
   });
