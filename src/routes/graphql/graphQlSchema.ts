@@ -75,6 +75,20 @@ export const createSchema = (prisma: PrismaClient) => {
             where: { authorId: source.id },
           }),
       },
+      userSubscribedTo: {
+        type: new GraphQLList(UserType),
+        resolve: (source) =>
+          prisma.user.findMany({
+            where: { subscribedToUser: { some: { subscriberId: source.id } } },
+          }),
+      },
+      subscribedToUser: {
+        type: new GraphQLList(UserType),
+        resolve: (source) =>
+          prisma.user.findMany({
+            where: { subscribedToUser: { some: { authorId: source.id } } },
+          }),
+      },
     }),
   });
 
@@ -91,7 +105,11 @@ export const createSchema = (prisma: PrismaClient) => {
           args: {
             id: { type: new GraphQLNonNull(UUIDType) },
           },
-          resolve: async (_, { id }) => prisma.user.findUnique({ where: { id } }),
+          resolve: async (_, { id }) => {
+            const user = await prisma.user.findUnique({ where: { id } });
+            if (!user) throw new Error('User not found');
+            return user;
+          },
         },
         posts: {
           type: new GraphQLList(PostType),
@@ -102,7 +120,10 @@ export const createSchema = (prisma: PrismaClient) => {
           args: {
             id: { type: new GraphQLNonNull(UUIDType) },
           },
-          resolve: async () => prisma.post.findMany(),
+          resolve: async (_, { id }) =>
+            prisma.post.findUnique({
+              where: { id },
+            }),
         },
         profiles: {
           type: new GraphQLList(ProfileType),
@@ -122,7 +143,7 @@ export const createSchema = (prisma: PrismaClient) => {
         memberType: {
           type: MemberType,
           args: {
-            id: { type: new GraphQLNonNull(UUIDType) },
+            id: { type: new GraphQLNonNull(MemberTypeIdEnum) },
           },
           resolve: async (_, { id }) => prisma.memberType.findUnique({ where: { id } }),
         },
