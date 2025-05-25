@@ -3,6 +3,7 @@ import { createGqlResponseSchema, gqlResponseSchema } from './schemas.js';
 import depthLimit from 'graphql-depth-limit';
 import { createSchema } from './graphQlSchema.js';
 import { execute, parse, validate } from 'graphql';
+
 const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
   const { prisma } = fastify;
   const schema = createSchema(prisma);
