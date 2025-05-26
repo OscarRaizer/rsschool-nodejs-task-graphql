@@ -26,7 +26,10 @@ import type {
   CreateProfileInputType,
   ChangeProfileInputType,
 } from './types/data.js';
-import { createDataLoaders } from './dataLoaders.js';
+import type { createDataLoaders } from './dataLoaders.js';
+
+type DataLoaders = ReturnType<typeof createDataLoaders>;
+type Context = { dataLoaders: DataLoaders };
 
 export const createSchema = (prisma: PrismaClient) => {
   const PostType: GraphQLObjectType = new GraphQLObjectType({
@@ -63,7 +66,11 @@ export const createSchema = (prisma: PrismaClient) => {
       yearOfBirth: { type: new GraphQLNonNull(GraphQLInt) },
       memberType: {
         type: MemberType,
-        resolve: async (source: Profile, _, context): Promise<PrismaMemberType | null> =>
+        resolve: async (
+          source: Profile,
+          _,
+          context: Context,
+        ): Promise<PrismaMemberType | null> =>
           context.dataLoaders.memberTypeLoader.load(source.memberTypeId),
       },
     }),
@@ -77,22 +84,22 @@ export const createSchema = (prisma: PrismaClient) => {
       balance: { type: new GraphQLNonNull(GraphQLFloat) },
       profile: {
         type: ProfileType,
-        resolve: async (source: User, _, context): Promise<Profile | null> =>
+        resolve: async (source: User, _, context: Context): Promise<Profile | null> =>
           context.dataLoaders.profileLoader.load(source.id),
       },
       posts: {
         type: new GraphQLList(PostType),
-        resolve: async (source: User, _, context): Promise<Post[]> =>
+        resolve: async (source: User, _, context: Context): Promise<Post[]> =>
           context.dataLoaders.postsLoader.load(source.id),
       },
       userSubscribedTo: {
         type: new GraphQLList(UserType),
-        resolve: async (source: User, _, context): Promise<User[]> =>
+        resolve: async (source: User, _, context: Context): Promise<User[]> =>
           context.dataLoaders.userSubscribedToLoader.load(source.id),
       },
       subscribedToUser: {
         type: new GraphQLList(UserType),
-        resolve: async (source: User, _, context): Promise<User[]> =>
+        resolve: async (source: User, _, context: Context): Promise<User[]> =>
           context.dataLoaders.subscribedToUserLoader.load(source.id),
       },
     }),
@@ -304,8 +311,11 @@ export const createSchema = (prisma: PrismaClient) => {
           args: {
             id: { type: new GraphQLNonNull(UUIDType) },
           },
-          resolve: async (_, { id }: { id: string }, context): Promise<User | null> =>
-            context.dataLoaders.userLoader.load(id),
+          resolve: async (
+            _,
+            { id }: { id: string },
+            context: Context,
+          ): Promise<User | null> => context.dataLoaders.userLoader.load(id),
         },
         posts: {
           type: new GraphQLList(PostType),
@@ -343,7 +353,7 @@ export const createSchema = (prisma: PrismaClient) => {
           resolve: async (
             _,
             { id }: { id: string },
-            context,
+            context: Context,
           ): Promise<PrismaMemberType | null> =>
             context.dataLoaders.memberTypeLoader.load(id),
         },
