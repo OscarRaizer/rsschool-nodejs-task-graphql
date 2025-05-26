@@ -26,6 +26,7 @@ import type {
   CreateProfileInputType,
   ChangeProfileInputType,
 } from './types/data.js';
+import { createDataLoaders } from './dataLoaders.js';
 
 export const createSchema = (prisma: PrismaClient) => {
   const PostType: GraphQLObjectType = new GraphQLObjectType({
@@ -62,10 +63,8 @@ export const createSchema = (prisma: PrismaClient) => {
       yearOfBirth: { type: new GraphQLNonNull(GraphQLInt) },
       memberType: {
         type: MemberType,
-        resolve: async (source: Profile): Promise<PrismaMemberType | null> =>
-          prisma.memberType.findUnique({
-            where: { id: source.memberTypeId },
-          }),
+        resolve: async (source: Profile, _, context): Promise<PrismaMemberType | null> =>
+          context.dataLoaders.memberTypeLoader.load(source.memberTypeId),
       },
     }),
   });
@@ -78,35 +77,23 @@ export const createSchema = (prisma: PrismaClient) => {
       balance: { type: new GraphQLNonNull(GraphQLFloat) },
       profile: {
         type: ProfileType,
-        resolve: async (source: User): Promise<Profile | null> =>
-          prisma.profile.findUnique({
-            where: { userId: source.id },
-          }),
+        resolve: async (source: User, _, context): Promise<Profile | null> =>
+          context.dataLoaders.profileLoader.load(source.id),
       },
       posts: {
         type: new GraphQLList(PostType),
-        resolve: async (source: User): Promise<Post[]> =>
-          prisma.post.findMany({
-            where: { authorId: source.id },
-          }),
+        resolve: async (source: User, _, context): Promise<Post[]> =>
+          context.dataLoaders.postsLoader.load(source.id),
       },
       userSubscribedTo: {
         type: new GraphQLList(UserType),
-        resolve: async (source: User): Promise<User[]> => {
-          const users = await prisma.user.findMany({
-            where: { subscribedToUser: { some: { subscriberId: source.id } } },
-          });
-          return users;
-        },
+        resolve: async (source: User, _, context): Promise<User[]> =>
+          context.dataLoaders.userSubscribedToLoader.load(source.id),
       },
       subscribedToUser: {
         type: new GraphQLList(UserType),
-        resolve: async (source: User): Promise<User[]> => {
-          const users = await prisma.user.findMany({
-            where: { userSubscribedTo: { some: { authorId: source.id } } },
-          });
-          return users;
-        },
+        resolve: async (source: User, _, context): Promise<User[]> =>
+          context.dataLoaders.subscribedToUserLoader.load(source.id),
       },
     }),
   });
@@ -317,8 +304,8 @@ export const createSchema = (prisma: PrismaClient) => {
           args: {
             id: { type: new GraphQLNonNull(UUIDType) },
           },
-          resolve: async (_, { id }: { id: string }): Promise<User | null> =>
-            prisma.user.findUnique({ where: { id } }),
+          resolve: async (_, { id }: { id: string }, context): Promise<User | null> =>
+            context.dataLoaders.userLoader.load(id),
         },
         posts: {
           type: new GraphQLList(PostType),
@@ -353,8 +340,12 @@ export const createSchema = (prisma: PrismaClient) => {
           args: {
             id: { type: new GraphQLNonNull(MemberTypeIdEnum) },
           },
-          resolve: async (_, { id }: { id: string }): Promise<PrismaMemberType | null> =>
-            prisma.memberType.findUnique({ where: { id } }),
+          resolve: async (
+            _,
+            { id }: { id: string },
+            context,
+          ): Promise<PrismaMemberType | null> =>
+            context.dataLoaders.memberTypeLoader.load(id),
         },
       },
     }),
